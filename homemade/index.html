@@ -497,6 +497,18 @@
             btn.innerText = isHidden ? 'HIDE UNSELECTED' : 'SHOW ALL CHKUMMER PHOTOS';
         }
 
+        function preloadImages(index) {
+            const prevIndex = (index - 1 < 0) ? images.length - 1 : index - 1;
+            const nextIndex = (index + 1 >= images.length) ? 0 : index + 1;
+            
+            // Background preload
+            const imgPrev = new Image();
+            imgPrev.src = images[prevIndex].url;
+            
+            const imgNext = new Image();
+            imgNext.src = images[nextIndex].url;
+        }
+
         function openLightbox(index) {
             currentIndex = index;
             lightboxImg.src = '';
@@ -505,6 +517,7 @@
             lightbox.classList.add('active');
             document.body.style.overflow = 'hidden';
             updateLightboxBtns();
+            preloadImages(currentIndex);
         }
 
         function closeLightbox() {
@@ -522,6 +535,7 @@
             lightbox.classList.add('loading');
             lightboxImg.src = images[currentIndex].url;
             updateLightboxBtns();
+            preloadImages(currentIndex);
         }
 
         document.addEventListener('keydown', (e) => {
