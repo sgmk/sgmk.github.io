@@ -904,32 +904,68 @@
                 
                 let avgParam = '';
                 const d = parseInt(days);
-                if (d > 180) {
-                    avgParam = '&average=daily'; // 1 day optimized
-                } else if (d > 60) {
-                    avgParam = '&average=240'; // 4 hours
-                } else if (d > 14) {
-                    avgParam = '&average=60'; // 1 hour
+                let useChunks = false;
+                
+                if (d > 30) {
+                    avgParam = '&average=daily'; // Pre-computed daily averages bypass the limit for long periods
                 } else if (d > 3) {
-                    avgParam = '&average=15'; // 15 mins
+                    avgParam = '&average=60'; // 1 hour for up to 30 days
+                    useChunks = true;
+                } else {
+                    avgParam = '&average=15'; // 15 mins for <= 3 days
                 }
                 
                 try {
-                    let fetchUrl = `https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL}/feeds.json?days=${days}&results=8000${avgParam}`;
-                    if (metric !== 'field1,field5') {
-                        // Use fields API for single metrics to heavily optimize ThingSpeak backend processing
-                        const fieldNum = metric.replace('field', '');
-                        fetchUrl = `https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL}/fields/${fieldNum}.json?days=${days}&results=8000${avgParam}`;
+                    let allFeeds = [];
+                    
+                    if (useChunks) {
+                        const chunkDays = 3;
+                        const numChunks = Math.ceil(d / chunkDays);
+                        const now = new Date();
+                        
+                        // Fetch chunks sequentially to avoid rate limiting
+                        for (let i = 0; i < numChunks; i++) {
+                            const chunkEnd = new Date(now.getTime() - i * chunkDays * 24 * 60 * 60 * 1000);
+                            const chunkStart = new Date(now.getTime() - Math.min((i + 1) * chunkDays, d) * 24 * 60 * 60 * 1000);
+                            
+                            const startStr = chunkStart.toISOString().split('.')[0] + 'Z';
+                            const endStr = chunkEnd.toISOString().split('.')[0] + 'Z';
+                            
+                            let fetchUrl = `https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL}/feeds.json?start=${startStr}&end=${endStr}${avgParam}`;
+                            if (metric !== 'field1,field5') {
+                                const fieldNum = metric.replace('field', '');
+                                fetchUrl = `https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL}/fields/${fieldNum}.json?start=${startStr}&end=${endStr}${avgParam}`;
+                            }
+                            
+                            const response = await fetch(fetchUrl);
+                            if (!response.ok) throw new Error(`Failed to fetch chunk ${i+1}`);
+                            const data = await response.json();
+                            if (data.feeds) {
+                                allFeeds = allFeeds.concat(data.feeds);
+                            }
+                        }
+                        
+                        // Ensure chronological order
+                        allFeeds.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                    } else {
+                        let fetchUrl = `https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL}/feeds.json?days=${days}${avgParam}`;
+                        if (metric !== 'field1,field5') {
+                            const fieldNum = metric.replace('field', '');
+                            fetchUrl = `https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL}/fields/${fieldNum}.json?days=${days}${avgParam}`;
+                        }
+                        const response = await fetch(fetchUrl);
+                        if (!response.ok) throw new Error('Failed to fetch historical data');
+                        const data = await response.json();
+                        if (data.feeds) {
+                            allFeeds = data.feeds;
+                        }
                     }
-                    const response = await fetch(fetchUrl);
-                    if (!response.ok) throw new Error('Failed to fetch historical data');
-                    const data = await response.json();
                     
                     const timestamps = [];
                     const dataY1 = [];
                     const dataY2 = [];
                     
-                    data.feeds.forEach(f => {
+                    allFeeds.forEach(f => {
                         timestamps.push(f.created_at);
                         if (metric === 'field1,field5') {
                             dataY1.push(f.field1 ? parseFloat(f.field1) : null);
