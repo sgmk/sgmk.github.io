@@ -498,16 +498,23 @@
                 <div class="historical-controls" style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
                     <select id="histMetric" class="hist-select" onchange="updateHistory()">
                         <option value="field1,field5">Temperature</option>
-                        <option value="field3">CO2</option>
+                        <option value="field3" selected>CO2</option>
                         <option value="field4">Humidity</option>
                         <option value="field6">Battery</option>
                     </select>
                     
                     <select id="histDays" class="hist-select" onchange="updateHistory()">
                         <option value="3">3 Days</option>
-                        <option value="7" selected>7 Days</option>
+                        <option value="7">7 Days</option>
                         <option value="14">14 Days</option>
-                        <option value="30">30 Days</option>
+                        <option value="30">1 Month</option>
+                        <option value="60">2 Months</option>
+                        <option value="90">3 Months</option>
+                        <option value="180">6 Months</option>
+                        <option value="365">1 Year</option>
+                        <option value="730">2 Years</option>
+                        <option value="1095" selected>3 Years</option>
+                        <option value="1825">5 Years</option>
                     </select>
                     <button class="refresh-button" onclick="updateHistory()" style="margin-left: 0;">Load History</button>
                     <span id="histLoading" style="color: var(--theme-primary); display: none; align-self: center;">Loading...</span>
@@ -778,11 +785,13 @@
                             x: {
                                 type: 'time',
                                 time: {
-                                    tooltipFormat: 'yyyy-MM-dd HH:mm',
+                                    tooltipFormat: 'dd.MM.yyyy HH:mm',
                                     displayFormats: {
-                                        hour: 'MM-dd HH:mm',
+                                        hour: 'dd.MM.yyyy HH:mm',
                                         minute: 'HH:mm',
-                                        day: 'MMM dd'
+                                        day: 'dd.MM.yyyy',
+                                        month: 'MM.yyyy',
+                                        year: 'yyyy'
                                     }
                                 },
                                 grid: { color: `rgba(${colors.secondaryRgb}, 0.1)` },
@@ -839,11 +848,12 @@
                     const latestTime = new Date(latest.created_at);
                     const formatTime = (dateStr) => {
                         const localD = new Date(dateStr);
+                        const year = localD.getFullYear();
                         const month = (localD.getMonth() + 1).toString().padStart(2, '0');
                         const day = localD.getDate().toString().padStart(2, '0');
                         const hours = localD.getHours().toString().padStart(2, '0');
                         const mins = localD.getMinutes().toString().padStart(2, '0');
-                        return `${month}-${day} ${hours}:${mins}`;
+                        return `${day}.${month}.${year} ${hours}:${mins}`;
                     };
                     
                     const timeStr = formatTime(latestTime);
@@ -885,11 +895,25 @@
 
             async function updateHistory() {
                 const metric = document.getElementById('histMetric').value;
-                const days = document.getElementById('histDays').value;
+                const daysSelect = document.getElementById('histDays');
+                const days = daysSelect.value;
+                const daysText = daysSelect.options[daysSelect.selectedIndex].text;
                 document.getElementById('histLoading').style.display = 'inline';
                 
+                let avgParam = '';
+                const d = parseInt(days);
+                if (d > 180) {
+                    avgParam = '&average=1440'; // 1 day
+                } else if (d > 60) {
+                    avgParam = '&average=240'; // 4 hours
+                } else if (d > 14) {
+                    avgParam = '&average=60'; // 1 hour
+                } else if (d > 3) {
+                    avgParam = '&average=15'; // 15 mins
+                }
+                
                 try {
-                    const response = await fetch(`https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL}/feeds.json?days=${days}&results=8000`);
+                    const response = await fetch(`https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL}/feeds.json?days=${days}&results=8000${avgParam}`);
                     if (!response.ok) throw new Error('Failed to fetch historical data');
                     const data = await response.json();
                     
@@ -912,25 +936,25 @@
                     let title, labels, colorsArray, colorRgbsArray, datasetsY;
                     
                     if (metric === 'field1,field5') {
-                        title = `Temperature History (${days} Days)`;
+                        title = `Temperature History (${daysText})`;
                         labels = ['Temperature (°C)', 'Ofebänkli Temp (°C)'];
                         colorsArray = [colors.secondary, colors.tertiary];
                         colorRgbsArray = [colors.secondaryRgb, colors.tertiaryRgb];
                         datasetsY = [dataY1, dataY2];
                     } else if (metric === 'field3') {
-                        title = `CO2 History (${days} Days)`;
+                        title = `CO2 History (${daysText})`;
                         labels = 'CO2 (ppm)';
                         colorsArray = colors.primary;
                         colorRgbsArray = colors.primaryRgb;
                         datasetsY = dataY1;
                     } else if (metric === 'field4') {
-                        title = `Humidity History (${days} Days)`;
+                        title = `Humidity History (${daysText})`;
                         labels = 'Humidity (%)';
                         colorsArray = colors.tertiary;
                         colorRgbsArray = colors.tertiaryRgb;
                         datasetsY = dataY1;
                     } else if (metric === 'field6') {
-                        title = `Battery History (${days} Days)`;
+                        title = `Battery History (${daysText})`;
                         labels = 'Battery Level (mV)';
                         colorsArray = colors.secondary;
                         colorRgbsArray = colors.secondaryRgb;
