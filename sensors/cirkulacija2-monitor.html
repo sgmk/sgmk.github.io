@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EAR Monitor - Environmental Artistic Research</title>
+    <title>Cirkulacija 2 Monitor</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <script src="https://bernii.github.io/gauge.js/dist/gauge.min.js"></script>
@@ -430,8 +430,8 @@
         </div>
 
         <h1>
-            EAR Monitor
-            <span class="location">Environmental Artistic Research</span>
+            Cirkulacija 2 Monitor
+            <span class="location">Cirkulacija 2</span>
         </h1>
         
         <div id="errorContainer" class="error" style="display: none;">
@@ -450,7 +450,7 @@
                         </div>
                         <div class="gauge-container">
                             <canvas id="temp2Gauge" class="gauge-canvas"></canvas>
-                            <div class="gauge-label">Ofebänkli Temp</div>
+                            <div class="gauge-label">Temperature 2</div>
                             <div id="latestTemp2" class="gauge-value">Loading...</div>
                         </div>
                         <div class="gauge-container">
@@ -542,7 +542,7 @@
             let co2Gauge = null;
             let humGauge = null;
 
-            const THINGSPEAK_CHANNEL = "1718702";
+            const THINGSPEAK_CHANNEL = "1725454";
             const THAILAND_OFFSET = 7 * 60 * 60 * 1000; // 7 hours in ms
 
             function getThemeColors() {
@@ -881,7 +881,7 @@
                     });
                     
                     const colors = getThemeColors();
-                    tempChartHistory = createChart('tempChartHistory', tempChartHistory, ['Temperature (°C)', 'Ofebänkli Temp (°C)'], timestamps, [tempHist, temp2Hist], [colors.secondary, colors.tertiary], [colors.secondaryRgb, colors.tertiaryRgb], 'Temperature History');
+                    tempChartHistory = createChart('tempChartHistory', tempChartHistory, ['Temperature (°C)', 'Temperature 2 (°C)'], timestamps, [tempHist, temp2Hist], [colors.secondary, colors.tertiary], [colors.secondaryRgb, colors.tertiaryRgb], 'Temperature History');
                     co2ChartHistory = createChart('co2ChartHistory', co2ChartHistory, 'CO2 (ppm)', timestamps, co2Hist, colors.primary, colors.primaryRgb, 'CO2 History');
                     humChartHistory = createChart('humChartHistory', humChartHistory, 'Humidity (%)', timestamps, humHist, colors.tertiary, colors.tertiaryRgb, 'Humidity History');
                     batteryChartHistory = createChart('batteryChartHistory', batteryChartHistory, 'Battery Level (mV)', timestamps, battHist, colors.secondary, colors.secondaryRgb, 'Battery History');
@@ -945,7 +945,7 @@
                     
                     if (metric === 'field1,field5') {
                         title = `Temperature History (${daysText})`;
-                        labels = ['Temperature (°C)', 'Ofebänkli Temp (°C)'];
+                        labels = ['Temperature (°C)', 'Temperature 2 (°C)'];
                         colorsArray = [colors.secondary, colors.tertiary];
                         colorRgbsArray = [colors.secondaryRgb, colors.tertiaryRgb];
                         datasetsY = [dataY1, dataY2];
